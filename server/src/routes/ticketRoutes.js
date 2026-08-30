@@ -1,6 +1,6 @@
 const express=require('express');
 
-const {createTicket,getTicket,getTicketbyID, updateTicket,deleteTicket}=require('../controllers/ticketController');
+const {createTicket,getTicket,getTicketbyID, updateTicket,deleteTicket,addComment, closeTicket}=require('../controllers/ticketController');
 
 const authMiddleware=require('../middleware/authMiddleware');
 
@@ -15,5 +15,13 @@ router.get("/:id",authMiddleware,getTicketbyID);
 router.patch("/:id",authMiddleware,updateTicket);
 
 router.delete("/:id",authMiddleware,deleteTicket);
+
+router.patch("/:id/close",authMiddleware,closeTicket);
+
+router.post(
+    "/:id/comments",
+    authMiddleware,
+    addComment
+);
 
 module.exports=router;

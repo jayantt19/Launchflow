@@ -48,33 +48,46 @@ const getTicket=async(req,res)=>{
     }
 }
 
-const getTicketbyID=async(req,res)=>{
-    try{
-        const ticket=await Ticket.findById(req.params.id);
-        if(!ticket){
-            return res.status(401).json({
-                message:"not found"
-            });
+const getTicketbyID = async (req, res) => {
+    try {
+        const ticket = await Ticket.findById(req.params.id)
+            .populate("createdBy", "name email role")
+            .populate("assignedTo", "name email role")
+            .populate("comments.user", "name email role");
 
+        if (!ticket) {
+            return res.status(404).json({
+                message: "Ticket not found"
+            });
         }
-         if (ticket.createdBy.toString() !== req.user._id.toString()) {
+
+        const isCreator =
+            ticket.createdBy._id.toString() === req.user._id.toString();
+
+        const isAssignedAgent =
+            ticket.assignedTo &&
+            ticket.assignedTo._id.toString() === req.user._id.toString();
+
+        const isAdmin = req.user.role === "admin";
+
+        if (!isCreator && !isAssignedAgent && !isAdmin) {
             return res.status(403).json({
                 message: "You are not allowed to access this ticket"
             });
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Ticket fetched successfully",
             ticket
         });
-    }
-    catch(err){
+
+    } catch (err) {
         return res.status(500).json({
-            message:"Server error",
-            err:err.message
-        })
+            message: "Server error",
+            err: err.message
+        });
     }
-}
+};
 
 const updateTicket=async(req,res)=>{
     try{
@@ -98,7 +111,7 @@ const updateTicket=async(req,res)=>{
                 status,
                 priority
             },
-            { new: true }
+           { returnDocument: "after" }
         );
 
         res.status(200).json({
@@ -141,5 +154,77 @@ const deleteTicket=async(req,res)=>{
         })
     }
 }
+const addComment=async(req,res)=>{
+try{
+const ticket=await Ticket.findById(req.params.id);
+if(!ticket){
+    return res.status(403).json({
+        message:"Ticket not found"
+    })
+}
+  const {message}=req.body;
+  if(!message){
+    return res.status(400).json({
+        message:"Message is Required"
+    })
+  }
+  ticket.comments.push({
+            user: req.user._id,
+            message
+        });
 
-module.exports={createTicket,getTicket,getTicketbyID,updateTicket,deleteTicket};
+        await ticket.save();
+
+        return res.status(201).json({
+            message: "Comment added successfully",
+            ticket
+        });
+}
+catch(err){
+    return res.status(500).json({
+        message:"Server Error",
+        err:err.message
+    })
+}
+}
+
+const closeTicket = async (req, res) => {
+    try {
+        const ticket = await Ticket.findById(req.params.id);
+
+        if (!ticket) {
+            return res.status(404).json({
+                message: "Ticket not found"
+            });
+        }
+
+        if (ticket.createdBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                message: "You are not allowed to close this ticket"
+            });
+        }
+
+        if (ticket.status !== "resolved") {
+            return res.status(400).json({
+                message: "Ticket must be resolved before closing"
+            });
+        }
+
+        ticket.status = "closed";
+
+        await ticket.save();
+
+        return res.status(200).json({
+            message: "Ticket closed successfully",
+            ticket
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            message: "Server Error",
+            err: err.message
+        });
+    }
+};
+
+module.exports={createTicket,getTicket,getTicketbyID,updateTicket,deleteTicket,addComment,closeTicket};

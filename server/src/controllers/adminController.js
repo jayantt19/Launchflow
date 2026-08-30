@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
-
+const Ticket=require('../models/Ticket')
 const createAdmin = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -97,4 +97,108 @@ const updateUserRole=async(req,res)=>{
         })
     }
 }
-module.exports = { createAdmin,getAdmin,updateUserRole};
+
+const getAllTickets=async(req,res)=>{
+  try{
+     const tickets = await Ticket.find();
+     if (tickets.length === 0) {
+    return res.status(404).json({
+        message: "No tickets found"
+    });
+}
+
+     res.status(200).json({
+        message:"Tickets fetched successfully",
+        tickets
+     })
+  }
+  catch(err){
+    return res.status(500).json({
+        message:"Server Error",
+        err:err.message
+    })
+  }
+}
+
+const assignTicket=async(req,res)=>{
+    try{
+      const ticket=await Ticket.findById(req.params.id);
+      if(!ticket){
+        return res.status(404).json({
+            message:"Ticket does not exist"
+        })
+      }
+   const {agentId}=req.body;
+
+   const agent=await User.findById(agentId);
+   if(!agent){
+    return res.status(404).json({
+        message:"Agent doesn't exist"
+    })
+   }
+   if (agent.role !== "agent") {
+    return res.status(400).json({
+        message: "User is not an agent"
+    });
+}
+   ticket.assignedTo = agentId;
+
+await ticket.save();
+
+return res.status(200).json({
+    message: "Ticket assigned successfully",
+    ticket
+});
+    }
+    catch(err){
+        return res.status(500).json({
+            message:"Server Error",
+            err:err.message
+        })
+    }
+}
+
+const getDashboardStats=async(req,res)=>{
+    try{
+        const totalTickets=await Ticket.countDocuments();
+        const openTickets=await Ticket.countDocuments({
+            status:"open"
+        });
+        const continueTickets=await Ticket.countDocuments({
+            status:"in-progress"
+        });
+        const resolvedTickets=await Ticket.countDocuments({
+            status:"resolved"
+        });
+        const closedTickets=await Ticket.countDocuments({
+            status:"closed"
+        });
+
+        const totalCustomers=await User.countDocuments({
+            role:"customer"
+        });
+        const totalAgents=await User.countDocuments({
+            role:"agent"
+        });
+
+        return res.status(200).json({
+            message:"Dashboard stastics fetched successfully",
+            stats:{
+                totalTickets,
+                openTickets,
+                continueTickets,
+                resolvedTickets,
+                closedTickets,
+                totalCustomers,
+                totalAgents
+            }
+        })
+    }
+    catch(err){
+        return res.status(500).json({
+            message:"Server Error",
+            err:err.message
+        });
+    }
+}
+module.exports = { createAdmin,getAdmin,updateUserRole,getAllTickets,assignTicket,getDashboardStats};
