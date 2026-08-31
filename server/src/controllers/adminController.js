@@ -100,7 +100,24 @@ const updateUserRole=async(req,res)=>{
 
 const getAllTickets=async(req,res)=>{
   try{
-     const tickets = await Ticket.find();
+    const { status, priority ,page,limit,search} = req.query;
+    const pageNumber = parseInt(page) || 1;
+    const limitNumber = parseInt(limit) || 10;
+    const skip=(pageNumber - 1) * limitNumber;
+    const filter={};
+    if(status){
+        filter.status=status;
+    }
+    if(priority){
+        filter.priority=priority;
+    }
+    if (search) {
+    filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
+    ];
+}
+     const tickets = await Ticket.find(filter).skip(skip).limit(limitNumber);
      if (tickets.length === 0) {
     return res.status(404).json({
         message: "No tickets found"
@@ -133,7 +150,7 @@ const assignTicket=async(req,res)=>{
    const agent=await User.findById(agentId);
    if(!agent){
     return res.status(404).json({
-        message:"Agent doesn't exist"
+        message:"Agent not found"
     })
    }
    if (agent.role !== "agent") {

@@ -32,9 +32,14 @@ const createTicket=async(req,res)=>{
 
 const getTicket=async(req,res)=>{
     try{
-        const tickets=await Ticket.find({
-            createdBy:req.user._id
-        });
+        const{status}=req.query;
+        const filter = {
+    createdBy: req.user._id
+};
+if (status) {
+    filter.status = status;
+}
+        const tickets=await Ticket.find(filter).populate("assignedTo", "name email role");;
         res.status(200).json({
             message:"Tickets fetched successfully",
             tickets
