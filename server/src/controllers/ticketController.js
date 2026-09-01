@@ -1,20 +1,58 @@
 const Ticket=require('../models/Ticket');
-
+const mongoose=require('mongoose')
+ 
 const createTicket=async(req,res)=>{
     try{
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+        message: "Invalid ticket ID"
+    });
+}
   const {title,description,priority}=req.body;
 
   if(!title || !description){
-    return res.status(401).json({
+    return res.status(400).json({
         message:"Title and Description are required"
     });
   }
 
+  if (!["low", "medium", "high", "urgent"].includes(priority)) {
+    return res.status(400).json({
+        message: "Invalid priority"
+    });
+}
+   let slaHours;
+   if (priority === "urgent") {
+    slaHours = 1;
+}
+
+ if (priority === "high") {
+    slaHours = 4;
+}
+
+if (priority === "medium") {
+    slaHours = 12;
+}
+
+if (priority === "low") {
+    slaHours = 24;
+}
+const slaDeadline = new Date();
+slaDeadline.setHours(
+    slaDeadline.getHours() + slaHours
+);
   const ticket=await Ticket.create({
     title,
     description,
     priority,
-    createdBy:req.user._id
+    slaDeadline,
+    createdBy:req.user._id,
+    activity: [
+    {
+        action: "Ticket created",
+        performedBy: req.user._id
+    }
+]
   });
 
   res.status(201).json({
@@ -31,7 +69,13 @@ const createTicket=async(req,res)=>{
 };
 
 const getTicket=async(req,res)=>{
+    
     try{
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+        message: "Invalid ticket ID"
+    });
+}
         const{status}=req.query;
         const filter = {
     createdBy: req.user._id
@@ -55,6 +99,11 @@ if (status) {
 
 const getTicketbyID = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+        message: "Invalid ticket ID"
+    });
+}
         const ticket = await Ticket.findById(req.params.id)
             .populate("createdBy", "name email role")
             .populate("assignedTo", "name email role")
@@ -96,6 +145,11 @@ const getTicketbyID = async (req, res) => {
 
 const updateTicket=async(req,res)=>{
     try{
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+        message: "Invalid ticket ID"
+    });
+}
    const ticket=await Ticket.findById(req.params.id);
     if(!ticket){
             return res.status(401).json({
@@ -134,6 +188,11 @@ const updateTicket=async(req,res)=>{
 
 const deleteTicket=async(req,res)=>{
     try{
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+        message: "Invalid ticket ID"
+    });
+}
      const ticket=await Ticket.findById(req.params.id);
      if(!ticket){
         return res.status(404).json({
@@ -161,6 +220,11 @@ const deleteTicket=async(req,res)=>{
 }
 const addComment=async(req,res)=>{
 try{
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+        message: "Invalid ticket ID"
+    });
+}
 const ticket=await Ticket.findById(req.params.id);
 if(!ticket){
     return res.status(403).json({
@@ -178,7 +242,26 @@ if(!ticket){
             message
         });
 
+        ticket.activity.push({
+    action: "Comment added",
+    performedBy: req.user._id
+});
+        let recipient;
+
+if (req.user.role === "customer") {
+    recipient = ticket.assignedTo;
+} else if (req.user.role === "agent") {
+    recipient = ticket.createdBy;
+}
+
         await ticket.save();
+if (recipient) {
+    await Notification.create({
+        recipient,
+        message: `New comment on ticket: ${ticket.title}`,
+        ticket: ticket._id
+    });
+}
 
         return res.status(201).json({
             message: "Comment added successfully",
@@ -195,6 +278,11 @@ catch(err){
 
 const closeTicket = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+        message: "Invalid ticket ID"
+    });
+}
         const ticket = await Ticket.findById(req.params.id);
 
         if (!ticket) {
@@ -216,6 +304,11 @@ const closeTicket = async (req, res) => {
         }
 
         ticket.status = "closed";
+        
+   ticket.activity.push({
+    action: "Ticket closed",
+    performedBy: req.user._id
+});
 
         await ticket.save();
 

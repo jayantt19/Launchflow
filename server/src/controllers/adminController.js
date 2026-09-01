@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const Ticket=require('../models/Ticket')
+const Notification = require("../models/Notification");
 const createAdmin = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -118,15 +119,39 @@ const getAllTickets=async(req,res)=>{
     ];
 }
      const tickets = await Ticket.find(filter).skip(skip).limit(limitNumber);
-     if (tickets.length === 0) {
+        if (tickets.length === 0) {
     return res.status(404).json({
         message: "No tickets found"
     });
 }
+     const ticketsWithSla = tickets.map(ticket => {
+    const isSlaBreached = new Date() > ticket.slaDeadline && (ticket.status === "open" || ticket.status === "in-progress");
+
+    const now=new Date();
+    const remainingTime=ticket.slaDeadline-now;
+    const remainingHours = Math.floor(remainingTime / (1000 * 60 * 60));
+    const remainingMinutes = Math.floor(
+    (remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+    let formattedTime;
+    if(ticket.status === "resolved" || ticket.status === "closed"){
+         formattedTime = "Completed";
+    }
+    else if(remainingTime>0){
+        formattedTime = `${remainingHours}h ${remainingMinutes}m`;
+    }
+    else{
+          formattedTime = "SLA breached";
+    }
+    return {
+    ...ticket.toObject(),
+    isSlaBreached,
+    remainingTime:formattedTime
+};
+     });
 
      res.status(200).json({
         message:"Tickets fetched successfully",
-        tickets
+        tickets:ticketsWithSla
      })
   }
   catch(err){
@@ -160,7 +185,17 @@ const assignTicket=async(req,res)=>{
 }
    ticket.assignedTo = agentId;
 
+   ticket.activity.push({
+    action: "Ticket assigned to agent",
+    performedBy: req.user._id
+});
 await ticket.save();
+
+await Notification.create({
+    recipient: agentId,
+    message: `You have been assigned a new ticket: ${ticket.title}`,
+    ticket: ticket._id
+});
 
 return res.status(200).json({
     message: "Ticket assigned successfully",
@@ -218,4 +253,108 @@ const getDashboardStats=async(req,res)=>{
         });
     }
 }
-module.exports = { createAdmin,getAdmin,updateUserRole,getAllTickets,assignTicket,getDashboardStats};
+
+const getAgentWorkload=async(req,res)=>{
+    try{
+        const agents=await User.find({
+           role: "agent"
+    });
+    if(agents.length==0){
+        return res.status(404).json({
+            message:" No Agent found"
+        })
+    }
+    const agentWorkload = await Promise.all(
+    agents.map(async (agent) => {
+        const tickets = await Ticket.find({
+            assignedTo: agent._id
+        });
+
+        const totalTickets = tickets.length;
+        const openTickets = tickets.filter(
+    ticket => ticket.status === "open"
+).length;
+const inProgressTickets = tickets.filter(
+    ticket => ticket.status === "in-progress"
+).length;
+const resolvedTickets = tickets.filter(
+    ticket => ticket.status === "resolved"
+).length;
+
+              return {
+    name: agent.name,
+    email: agent.email,
+    totalTickets,
+    openTickets,
+    inProgressTickets,
+    resolvedTickets
+};
+    }));
+
+    return res.status(200).json({
+    message: "Agent workload fetched successfully",
+    agents: agentWorkload
+});
+
+    }
+    catch(err){
+        return res.status(500).json({
+            message:"Server Error",
+            err:err.message
+        })
+    }
+}
+
+const recommendAgent = async (req, res) => {
+    try {
+        const agents = await User.find({
+            role: "agent"
+        });
+
+        if (agents.length === 0) {
+            return res.status(404).json({
+                message: "No agents found"
+            });
+        }
+
+        const agentWorkload = await Promise.all(
+            agents.map(async (agent) => {
+
+                const tickets = await Ticket.find({
+                    assignedTo: agent._id,
+                    status: {
+                        $in: ["open", "in-progress"]
+                    }
+                });
+
+                return {
+                    agent,
+                    activeTickets: tickets.length
+                };
+            })
+        );
+
+        agentWorkload.sort(
+            (a, b) => a.activeTickets - b.activeTickets
+        );
+
+        const recommendedAgent = agentWorkload[0];
+
+        return res.status(200).json({
+            message: "Agent recommended successfully",
+            recommendedAgent: {
+                id: recommendedAgent.agent._id,
+                name: recommendedAgent.agent.name,
+                email: recommendedAgent.agent.email,
+                activeTickets: recommendedAgent.activeTickets
+            }
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            message: "Server Error",
+            err: err.message
+        });
+    }
+};
+module.exports = { createAdmin,getAdmin,updateUserRole,getAllTickets,assignTicket,getDashboardStats,getAgentWorkload,recommendAgent};

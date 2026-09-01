@@ -49,7 +49,28 @@ const ticketSchema=new mongoose.Schema({
             default: Date.now
         }
     }
-]
+],
+    activity: [
+    {
+        action: {
+            type: String,
+            required: true
+        },
+        performedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }
+],
+     slaDeadline:{
+        type:Date,
+        default:null
+     }
 },
 {
     timestamps:true

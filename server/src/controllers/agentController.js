@@ -45,14 +45,25 @@ const updateTicketStatus=async(req,res)=>{
         message: "Invalid status"
     });
 }
-        const updateStatus=await Ticket.findByIdAndUpdate(req.params.id,{
-                status
-            },
-            { new: true });
+   if (ticket.status === status) {
+    return res.status(400).json({
+        message: "Ticket is already in this status"
+    });
+}
+
+const oldStatus = ticket.status;
+        ticket.status = status;
+
+ticket.activity.push({
+    action: `Status changed from ${oldStatus} to ${status}`,
+    performedBy: req.user._id
+});
+
+await ticket.save();
 
             return res.status(200).json({
                 message:"Ticket Updated Successfully",
-                ticket:updateStatus
+                ticket
             })
         }
     catch(err){
