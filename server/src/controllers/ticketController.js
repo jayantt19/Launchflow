@@ -1,14 +1,11 @@
 const Ticket=require('../models/Ticket');
 const mongoose=require('mongoose')
+const Notification = require('../models/Notification');
  
 const createTicket=async(req,res)=>{
     try{
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({
-        message: "Invalid ticket ID"
-    });
-}
   const {title,description,priority}=req.body;
+
 
   if(!title || !description){
     return res.status(400).json({
@@ -55,6 +52,7 @@ slaDeadline.setHours(
 ]
   });
 
+
   res.status(201).json({
     message:"Ticket created successfully",
     ticket
@@ -71,11 +69,6 @@ slaDeadline.setHours(
 const getTicket=async(req,res)=>{
     
     try{
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({
-        message: "Invalid ticket ID"
-    });
-}
         const{status}=req.query;
         const filter = {
     createdBy: req.user._id
@@ -83,7 +76,7 @@ const getTicket=async(req,res)=>{
 if (status) {
     filter.status = status;
 }
-        const tickets=await Ticket.find(filter).populate("assignedTo", "name email role");;
+        const tickets=await Ticket.find(filter).populate("assignedTo", "name email role");
         res.status(200).json({
             message:"Tickets fetched successfully",
             tickets
@@ -99,11 +92,6 @@ if (status) {
 
 const getTicketbyID = async (req, res) => {
     try {
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({
-        message: "Invalid ticket ID"
-    });
-}
         const ticket = await Ticket.findById(req.params.id)
             .populate("createdBy", "name email role")
             .populate("assignedTo", "name email role")
@@ -145,11 +133,6 @@ const getTicketbyID = async (req, res) => {
 
 const updateTicket=async(req,res)=>{
     try{
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({
-        message: "Invalid ticket ID"
-    });
-}
    const ticket=await Ticket.findById(req.params.id);
     if(!ticket){
             return res.status(401).json({
@@ -188,11 +171,6 @@ const updateTicket=async(req,res)=>{
 
 const deleteTicket=async(req,res)=>{
     try{
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({
-        message: "Invalid ticket ID"
-    });
-}
      const ticket=await Ticket.findById(req.params.id);
      if(!ticket){
         return res.status(404).json({
@@ -220,11 +198,6 @@ const deleteTicket=async(req,res)=>{
 }
 const addComment=async(req,res)=>{
 try{
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({
-        message: "Invalid ticket ID"
-    });
-}
 const ticket=await Ticket.findById(req.params.id);
 if(!ticket){
     return res.status(403).json({
@@ -278,11 +251,6 @@ catch(err){
 
 const closeTicket = async (req, res) => {
     try {
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({
-        message: "Invalid ticket ID"
-    });
-}
         const ticket = await Ticket.findById(req.params.id);
 
         if (!ticket) {
