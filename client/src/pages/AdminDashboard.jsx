@@ -25,7 +25,7 @@ function AdminDashboard() {
     useEffect(() => {
         const fetchTickets = async () => {
             try {
-                const response = await api.get("/tickets");
+                const response = await api.get("/admin/tickets");
 
                 setTickets(response.data.tickets || []);
             } catch (error) {

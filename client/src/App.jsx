@@ -16,7 +16,8 @@ import AISupport from "./pages/AISupport";
 import AgentTicketDetails from "./pages/AgentTicketDetails";
 import AgentDashboard from "./pages/AgentDashboard";
 import AgentTickets from "./pages/AgentTickets";
-
+import AdminTicketDetails from "./pages/AdminTicketDetails";
+import AdminTickets from "./pages/AdminTickets";
 import AdminDashboard from "./pages/AdminDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -36,6 +37,19 @@ function App() {
                     path="/login"
                     element={<Login />}
                 />
+
+                <Route
+    path="/admin/tickets/:id"
+    element={<AdminTicketDetails />}
+/> 
+<Route
+    path="/admin/tickets"
+    element={
+        <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminTickets />
+        </ProtectedRoute>
+    }
+/>
 
                 <Route
                     path="/register"

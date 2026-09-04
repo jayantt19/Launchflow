@@ -1,5 +1,5 @@
 const express = require("express");
-const { createAdmin,getAdmin, updateUserRole,getAllTickets, assignTicket,getDashboardStats,getAgentWorkload,recommendAgent } = require("../controllers/adminController");
+const { createAdmin,getAdmin, updateUserRole,getAllTickets, assignTicket,getDashboardStats,getAgentWorkload,getAllAgents,recommendAgent } = require("../controllers/adminController");
 const authMiddleware=require('../middleware/authMiddleware');
 const roleMiddleware=require('../middleware/roleMiddleware');
 const { checkSla } = require("../controllers/slaController");
@@ -27,6 +27,13 @@ router.get(
     authMiddleware,
     roleMiddleware("admin"),
     getAgentWorkload
+);
+
+router.get(
+    "/agents",
+    authMiddleware,
+    roleMiddleware("admin"),
+    getAllAgents
 );
 router.get(
     "/recommend-agent",

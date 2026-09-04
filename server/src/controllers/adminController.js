@@ -118,12 +118,9 @@ const getAllTickets=async(req,res)=>{
         { description: { $regex: search, $options: "i" } }
     ];
 }
+     const totalTickets = await Ticket.countDocuments(filter);
+     const totalPages = Math.ceil(totalTickets / limitNumber);
      const tickets = await Ticket.find(filter).skip(skip).limit(limitNumber);
-        if (tickets.length === 0) {
-    return res.status(404).json({
-        message: "No tickets found"
-    });
-}
      const ticketsWithSla = tickets.map(ticket => {
     const isSlaBreached = new Date() > ticket.slaDeadline && (ticket.status === "open" || ticket.status === "in-progress");
 
@@ -150,9 +147,12 @@ const getAllTickets=async(req,res)=>{
      });
 
      res.status(200).json({
-        message:"Tickets fetched successfully",
-        tickets:ticketsWithSla
-     })
+    message: "Tickets fetched successfully",
+    tickets: ticketsWithSla,
+    totalPages,
+    currentPage: pageNumber
+});
+console.log("Admin tickets:", response.data);
   }
   catch(err){
     return res.status(500).json({
@@ -183,10 +183,14 @@ const assignTicket=async(req,res)=>{
         message: "User is not an agent"
     });
 }
-   ticket.assignedTo = agentId;
+   const previousAgent = ticket.assignedTo;
 
-   ticket.activity.push({
-    action: "Ticket assigned to agent",
+ticket.assignedTo = agentId;
+
+ticket.activity.push({
+    action: previousAgent
+        ? "Ticket reassigned to another agent"
+        : "Ticket assigned to agent",
     performedBy: req.user._id
 });
 await ticket.save();
@@ -305,6 +309,25 @@ const resolvedTickets = tickets.filter(
     }
 }
 
+const getAllAgents = async (req, res) => {
+    try {
+        const agents = await User.find({
+            role: "agent"
+        }).select("name email");
+
+        return res.status(200).json({
+            message: "Agents fetched successfully",
+            agents
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            message: "Server Error",
+            err: err.message
+        });
+    }
+};
+
 const recommendAgent = async (req, res) => {
     try {
         const agents = await User.find({
@@ -357,4 +380,4 @@ const recommendAgent = async (req, res) => {
         });
     }
 };
-module.exports = { createAdmin,getAdmin,updateUserRole,getAllTickets,assignTicket,getDashboardStats,getAgentWorkload,recommendAgent};
+module.exports = { createAdmin,getAdmin,updateUserRole,getAllTickets,assignTicket,getDashboardStats,getAgentWorkload,getAllAgents,recommendAgent};
