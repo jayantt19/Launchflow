@@ -19,13 +19,15 @@ function AgentDashboard() {
 
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
-
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [showNotifications, setShowNotifications] = useState(false);
     useEffect(() => {
         const fetchTickets = async () => {
             try {
                 const response = await api.get("/agent/tickets");
 
-                console.log("Agent tickets:", response.data);
+        
 
                 setTickets(response.data.tickets || []);
             } catch (error) {
@@ -37,6 +39,40 @@ function AgentDashboard() {
 
         fetchTickets();
     }, []);
+
+    useEffect(() => {
+    const fetchNotifications = async () => {
+        try {
+            const response = await api.get("/notifications");
+
+            setNotifications(response.data.notifications || []);
+
+            const unreadResponse = await api.get(
+                "/notifications/unread-count"
+            );
+
+            setUnreadCount(unreadResponse.data.unreadCount || 0);
+
+        } catch (error) {
+            console.log("Failed to fetch notifications:", error);
+        }
+    };
+
+    fetchNotifications();
+}, []);
+useEffect(() => {
+    const handleClickOutside = () => {
+        setShowNotifications(false);
+    };
+
+    if (showNotifications) {
+        document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+        document.removeEventListener("click", handleClickOutside);
+    };
+}, [showNotifications]);
 
     const assignedTickets = tickets.length;
 
@@ -128,6 +164,7 @@ function AgentDashboard() {
             </aside>
 
             {/* Main */}
+            
             <div className="lg:ml-64">
 
                 {/* Navbar */}
@@ -141,11 +178,100 @@ function AgentDashboard() {
 
                         <div className="flex items-center gap-5">
 
-                            <button className="relative text-slate-500">
-                                <Bell size={20} />
+                     <div
+    className="relative"
+    onClick={(e) => e.stopPropagation()}
+>
 
-                                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500" />
-                            </button>
+    <button
+        onClick={() => setShowNotifications(!showNotifications)}
+        className="relative text-slate-500 hover:text-slate-700"
+    >
+        <Bell size={20} />
+
+        {unreadCount > 0 && (
+            <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-medium text-white">
+                {unreadCount}
+            </span>
+        )}
+    </button>
+
+    {showNotifications && (
+        <div className="absolute right-0 top-8 z-50 w-80 rounded-xl border border-slate-200 bg-white shadow-lg">
+
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                <h3 className="font-semibold text-slate-900">
+                    Notifications
+                </h3>
+
+                {unreadCount > 0 && (
+                    <span className="text-xs text-blue-600">
+                        {unreadCount} unread
+                    </span>
+                )}
+            </div>
+
+            <div className="max-h-80 overflow-y-auto">
+
+                {notifications.length === 0 ? (
+                    <p className="p-4 text-sm text-slate-500">
+                        No notifications.
+                    </p>
+                ) : (
+                    notifications.map((notification) => (
+                        <div
+                            key={notification._id}
+                            className={`border-b border-slate-100 p-4 ${
+                                notification.read
+                                    ? "bg-white"
+                                    : "bg-blue-50"
+                            }`}
+                        >
+                            <p className="text-sm text-slate-700">
+                                {notification.message}
+                            </p>
+
+                            {!notification.read && (
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            await api.patch(
+                                                `/notifications/${notification._id}/read`
+                                            );
+
+                                            setNotifications((prev) =>
+                                                prev.map((item) =>
+                                                    item._id === notification._id
+                                                        ? { ...item, read: true }
+                                                        : item
+                                                )
+                                            );
+
+                                            setUnreadCount((prev) =>
+                                                Math.max(0, prev - 1)
+                                            );
+
+                                        } catch (error) {
+                                            console.log(
+                                                "Failed to mark notification as read:",
+                                                error
+                                            );
+                                        }
+                                    }}
+                                    className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700"
+                                >
+                                    Mark as read
+                                </button>
+                            )}
+                        </div>
+                    ))
+                )}
+
+            </div>
+        </div>
+    )}
+
+</div>
 
                             <div className="h-7 w-px bg-slate-200" />
 
@@ -174,6 +300,7 @@ function AgentDashboard() {
                 </header>
 
                 {/* Content */}
+                
                 <main className="p-6 lg:p-8">
 
                     {/* Welcome */}
@@ -188,6 +315,7 @@ function AgentDashboard() {
                         </p>
 
                     </div>
+                    
 
                     {/* Stats */}
                     <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">

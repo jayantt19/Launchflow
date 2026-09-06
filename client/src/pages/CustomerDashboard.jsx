@@ -1,8 +1,19 @@
-import {LayoutDashboard,Ticket,Plus,Bot,Bell,LogOut,ChevronDown,Clock,CheckCircle,AlertCircle} from "lucide-react";
+import {
+    LayoutDashboard,
+    Ticket,
+    Plus,
+    Bot,
+    Bell,
+    LogOut,
+    ChevronDown,
+    Clock,
+    CheckCircle,
+    AlertCircle,
+} from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import api from "../services/api";
 
 function CustomerDashboard() {
@@ -10,14 +21,17 @@ function CustomerDashboard() {
     const navigate = useNavigate();
     const [tickets, setTickets] = useState([]);
 const [loading, setLoading] = useState(true);
+const notificationRef = useRef(null);
+const [notifications, setNotifications] = useState([]);
+const [unreadCount, setUnreadCount] = useState(0);
+const [showNotifications, setShowNotifications] = useState(false);
 
 useEffect(() => {
     const fetchTickets = async () => {
         try {
             const response = await api.get("/tickets");
 
-            console.log("Tickets:", response.data);
-            console.log("TOTAL TICKETS:", response.data.tickets.length);
+          
          console.log(
     "STATUSES:",
     response.data.tickets.map(ticket => ticket.status)
@@ -32,6 +46,59 @@ useEffect(() => {
 
     fetchTickets();
 }, []);
+
+useEffect(() => {
+    const fetchNotifications = async () => {
+        try {
+            const response = await api.get("/notifications");
+            setNotifications(response.data.notifications || []);
+
+            const unreadResponse = await api.get("/notifications/unread-count");
+            setUnreadCount(unreadResponse.data.unreadCount || 0);
+
+        } catch (error) {
+            console.log("Failed to fetch notifications:", error);
+        }
+    };
+
+    fetchNotifications();
+}, []);
+useEffect(() => {
+    const handleClickOutside = (event) => {
+        if (
+            notificationRef.current &&
+            !notificationRef.current.contains(event.target)
+        ) {
+            setShowNotifications(false);
+        }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+    };
+}, []);
+
+const handleNotificationClick = async (notification) => {
+    try {
+        if (!notification.read) {
+            await api.patch(`/notifications/${notification._id}/read`);
+
+            setNotifications((prev) =>
+                prev.map((item) =>
+                    item._id === notification._id
+                        ? { ...item, read: true }
+                        : item
+                )
+            );
+
+            setUnreadCount((prev) => Math.max(prev - 1, 0));
+        }
+    } catch (error) {
+        console.log("Failed to mark notification as read:", error);
+    }
+};
 
     const handleLogout = () => {
         logout();
@@ -133,17 +200,71 @@ useEffect(() => {
                                 Dashboard
                             </h1>
                         </div>
-
+                           
                         <div className="flex items-center gap-5">
 
-                            <button
-                                type="button"
-                                className="relative text-slate-500 hover:text-slate-900"
-                            >
-                                <Bell size={20} />
+                           <div className="relative">
+<div ref={notificationRef} className="relative">
+    <button
+        type="button"
+        onClick={() => setShowNotifications(!showNotifications)}
+        className="relative text-slate-500 hover:text-slate-900"
+    >
+        <Bell size={20} />
 
-                                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500" />
-                            </button>
+        {unreadCount > 0 && (
+            <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {unreadCount}
+            </span>
+        )}
+    </button>
+
+    {showNotifications && (
+        <div className="absolute right-0 mt-3 w-80 rounded-xl border border-slate-200 bg-white shadow-lg">
+
+            <div className="border-b border-slate-200 px-4 py-3">
+                <h3 className="font-semibold text-slate-900">
+                    Notifications
+                </h3>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                    <p className="px-4 py-6 text-center text-sm text-slate-500">
+                        No notifications
+                    </p>
+                ) : (
+                    notifications.map((notification) => (
+                        <button
+                            key={notification._id}
+                            type="button"
+                            onClick={() =>
+                                handleNotificationClick(notification)
+                            }
+                            className={`w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${
+                                !notification.read
+                                    ? "bg-blue-50"
+                                    : "bg-white"
+                            }`}
+                        >
+                            <p className="text-sm font-medium text-slate-900">
+                                {notification.message}
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-400">
+                                {new Date(
+                                    notification.createdAt
+                                ).toLocaleString()}
+                            </p>
+                        </button>
+                    ))
+                )}
+            </div>
+
+        </div>
+    )}
+</div>
+</div>
 
                             <div className="h-7 w-px bg-slate-200" />
 

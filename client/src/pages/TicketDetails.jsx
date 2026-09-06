@@ -107,28 +107,60 @@ const handleComment = async (e) => {
                 No comments yet.
             </p>
         ) : (
-            ticket.comments?.map((item, index) => (
-                <div
-                    key={index}
-                    className="rounded-lg bg-slate-50 p-4"
-                >
-                    <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-900">
-                            {item.user?.username || "User"}
-                        </p>
+           ticket.comments?.map((item, index) => {
+    const isAgent = item.user?.role === "agent";
 
-                        <p className="text-xs text-slate-400">
-                            {new Date(
-                                item.createdAt
-                            ).toLocaleString()}
-                        </p>
-                    </div>
+    return (
+        <div
+            key={index}
+            className={`flex ${
+                isAgent ? "justify-start" : "justify-end"
+            }`}
+        >
+            <div
+                className={`max-w-[75%] rounded-xl p-4 ${
+                    isAgent
+                        ? "bg-slate-100 text-slate-900"
+                        : "bg-blue-600 text-white"
+                }`}
+            >
+                <div className="flex items-center justify-between gap-6">
+                    <p
+                        className={`text-sm font-semibold ${
+                            isAgent
+                                ? "text-slate-900"
+                                : "text-white"
+                        }`}
+                    >
+                        {isAgent ? "Agent" : "You"}
+                    </p>
 
-                    <p className="mt-2 text-sm text-slate-600">
-                        {item.message}
+                    <p
+                        className={`text-xs ${
+                            isAgent
+                                ? "text-slate-400"
+                                : "text-blue-100"
+                        }`}
+                    >
+                        {new Date(
+                            item.createdAt
+                        ).toLocaleString()}
                     </p>
                 </div>
-            ))
+
+                <p
+                    className={`mt-2 text-sm ${
+                        isAgent
+                            ? "text-slate-600"
+                            : "text-white"
+                    }`}
+                >
+                    {item.message}
+                </p>
+            </div>
+        </div>
+    );
+})
         )}
 
     </div>

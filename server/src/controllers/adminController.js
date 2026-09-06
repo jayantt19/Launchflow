@@ -380,4 +380,51 @@ const recommendAgent = async (req, res) => {
         });
     }
 };
-module.exports = { createAdmin,getAdmin,updateUserRole,getAllTickets,assignTicket,getDashboardStats,getAgentWorkload,getAllAgents,recommendAgent};
+
+const updateTicketStatus = async (req, res) => {
+    try {
+        const ticket = await Ticket.findById(req.params.id);
+
+        if (!ticket) {
+            return res.status(404).json({
+                message: "Ticket does not exist"
+            });
+        }
+
+        const { status } = req.body;
+
+        if (!["open", "in-progress", "resolved", "closed"].includes(status)) {
+            return res.status(400).json({
+                message: "Invalid status"
+            });
+        }
+
+        ticket.status = status;
+
+        ticket.activity.push({
+            action: `Ticket status changed to ${status}`,
+            performedBy: req.user._id
+        });
+
+        await ticket.save();
+
+        // Notify customer
+        await Notification.create({
+            recipient: ticket.createdBy,
+            message: `Your ticket "${ticket.title}" status changed to ${status}`,
+            ticket: ticket._id
+        });
+
+        return res.status(200).json({
+            message: "Ticket status updated successfully",
+            ticket
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            message: "Server Error",
+            err: err.message
+        });
+    }
+};
+module.exports = { createAdmin,getAdmin,updateUserRole,getAllTickets,assignTicket,getDashboardStats,getAgentWorkload,getAllAgents,recommendAgent,updateTicketStatus};

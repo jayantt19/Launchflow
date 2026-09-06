@@ -19,8 +19,10 @@ import AgentTickets from "./pages/AgentTickets";
 import AdminTicketDetails from "./pages/AdminTicketDetails";
 import AdminTickets from "./pages/AdminTickets";
 import AdminDashboard from "./pages/AdminDashboard";
-
+import AdminAgents from "./pages/AdminAgents"
+import AdminUsers from "./pages/AdminUsers"
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminKnowledge from "./pages/AdminKnowledge";
 
 function App() {
     return (
@@ -38,10 +40,26 @@ function App() {
                     element={<Login />}
                 />
 
+
+                <Route
+    path="/admin/knowledge"
+    element={<AdminKnowledge />}
+/>
+
                 <Route
     path="/admin/tickets/:id"
     element={<AdminTicketDetails />}
 /> 
+<Route
+    path="/admin/agents"
+    element={<AdminAgents />}
+/>
+
+<Route
+    path="/admin/users"
+    element={<AdminUsers />}
+/>
+
 <Route
     path="/admin/tickets"
     element={

@@ -9,6 +9,7 @@ import {
     Clock,
     CheckCircle,
     AlertCircle,
+    BookOpen,
     Activity
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +22,9 @@ function AdminDashboard() {
 
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
-
+    const [notifications, setNotifications] = useState([]);
+const [unreadCount, setUnreadCount] = useState(0);
+const [showNotifications, setShowNotifications] = useState(false);
     useEffect(() => {
         const fetchTickets = async () => {
             try {
@@ -37,6 +40,26 @@ function AdminDashboard() {
 
         fetchTickets();
     }, []);
+
+    useEffect(() => {
+    const fetchNotifications = async () => {
+        try {
+            const response = await api.get("/notifications");
+
+            setNotifications(response.data.notifications || []);
+
+            const unreadResponse = await api.get(
+                "/notifications/unread-count"
+            );
+
+            setUnreadCount(unreadResponse.data.unreadCount || 0);
+        } catch (error) {
+            console.log("Failed to fetch notifications:", error);
+        }
+    };
+
+    fetchNotifications();
+}, []);
 
     const totalTickets = tickets.length;
 
@@ -60,6 +83,28 @@ function AdminDashboard() {
         logout();
         navigate("/login");
     };
+
+    const handleNotificationClick = async (notification) => {
+    try {
+        if (!notification.read) {
+            await api.patch(
+                `/notifications/${notification._id}/read`
+            );
+
+            setNotifications((prev) =>
+                prev.map((item) =>
+                    item._id === notification._id
+                        ? { ...item, read: true }
+                        : item
+                )
+            );
+
+            setUnreadCount((prev) => Math.max(prev - 1, 0));
+        }
+    } catch (error) {
+        console.log("Failed to mark notification as read:", error);
+    }
+};
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -125,6 +170,13 @@ function AdminDashboard() {
                             <UserCog size={18} />
                             Agents
                         </button>
+                        <button
+    onClick={() => navigate("/admin/knowledge")}
+    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+>
+    <BookOpen size={18} />
+    Knowledge Base
+</button>
 
                     </nav>
 
@@ -163,14 +215,66 @@ function AdminDashboard() {
 
                         <div className="flex items-center gap-5">
 
-                            <button
-                                type="button"
-                                className="relative text-slate-500 hover:text-slate-900"
-                            >
-                                <Bell size={20} />
+                          <div className="relative">
+    <button
+        type="button"
+        onClick={() => setShowNotifications(!showNotifications)}
+        className="relative text-slate-500 hover:text-slate-900"
+    >
+        <Bell size={20} />
 
-                                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500" />
-                            </button>
+        {unreadCount > 0 && (
+            <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {unreadCount}
+            </span>
+        )}
+    </button>
+
+    {showNotifications && (
+        <div className="absolute right-0 mt-3 w-80 rounded-xl border border-slate-200 bg-white shadow-lg">
+
+            <div className="border-b border-slate-200 px-4 py-3">
+                <h3 className="font-semibold text-slate-900">
+                    Notifications
+                </h3>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                    <p className="px-4 py-6 text-center text-sm text-slate-500">
+                        No notifications
+                    </p>
+                ) : (
+                    notifications.map((notification) => (
+                        <button
+                            key={notification._id}
+                            type="button"
+                            onClick={() =>
+                                handleNotificationClick(notification)
+                            }
+                            className={`w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${
+                                !notification.read
+                                    ? "bg-blue-50"
+                                    : "bg-white"
+                            }`}
+                        >
+                            <p className="text-sm font-medium text-slate-900">
+                                {notification.message}
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-400">
+                                {new Date(
+                                    notification.createdAt
+                                ).toLocaleString()}
+                            </p>
+                        </button>
+                    ))
+                )}
+            </div>
+
+        </div>
+    )}
+</div>
 
                             <div className="h-7 w-px bg-slate-200" />
 

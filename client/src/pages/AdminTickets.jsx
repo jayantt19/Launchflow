@@ -27,6 +27,7 @@ const [totalPages, setTotalPages] = useState(1);
 });
 
 
+
                 setTickets(response.data.tickets || []);
                 setTotalPages(response.data.totalPages || 1);
             } catch (error) {
@@ -39,9 +40,6 @@ const [totalPages, setTotalPages] = useState(1);
         fetchTickets();
    }, [status, priority,search,page]);
 
-   useEffect(() => {
-    setPage(1);
-}, [status, priority, search]);
     if (loading) {
         return <div className="p-8">Loading tickets...</div>;
     }
@@ -64,7 +62,10 @@ const [totalPages, setTotalPages] = useState(1);
     type="text"
     placeholder="Search tickets..."
     value={search}
-    onChange={(e) => setSearch(e.target.value)}
+    onChange={(e) => {
+        setSearch(e.target.value);
+        setPage(1);
+    }}
     className="border rounded-lg px-4 py-2 bg-white w-64"
 />
     <select

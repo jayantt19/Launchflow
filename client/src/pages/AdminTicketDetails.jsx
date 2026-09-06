@@ -11,12 +11,14 @@ function AdminTicketDetails() {
     const [loading, setLoading] = useState(true);
     const [agents, setAgents] = useState([]);
     const [selectedAgent, setSelectedAgent] = useState("");
+    const [status, setStatus] = useState("");
 
     useEffect(() => {
         const fetchTicket = async () => {
             try {
                 const response = await api.get(`/tickets/${id}`);
                setTicket(response.data.ticket);
+               setStatus(response.data.ticket.status);
 
 if (response.data.ticket.assignedTo) {
     setSelectedAgent(response.data.ticket.assignedTo._id);
@@ -253,6 +255,56 @@ setAgents(agentsResponse.data.agents || []);
 >
    {ticket.assignedTo ? "Reassign" : "Assign"}
 </button>
+
+    </div>
+
+</div>
+
+{/* Update Status */}
+<div className="border-t border-slate-200 p-6">
+
+    <h2 className="text-lg font-semibold text-slate-900">
+        Update Status
+    </h2>
+
+    <div className="mt-4 flex items-center gap-3">
+
+        <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm"
+        >
+            <option value="open">Open</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+        </select>
+
+        <button
+            onClick={async () => {
+                try {
+                    const response = await api.patch(
+                        `/admin/tickets/${id}/status`,
+                        { status }
+                    );
+
+                    setTicket(response.data.ticket);
+
+                    alert("Status updated successfully");
+
+                } catch (error) {
+                    console.log("Status update failed:", error);
+
+                    alert(
+                        error.response?.data?.message ||
+                        "Failed to update status"
+                    );
+                }
+            }}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+            Update Status
+        </button>
 
     </div>
 

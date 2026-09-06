@@ -1,5 +1,6 @@
 const Ticket=require('../models/Ticket');
 const mongoose=require('mongoose')
+const User = require("../models/User");
 const Notification = require('../models/Notification');
  
 const createTicket=async(req,res)=>{
@@ -51,6 +52,15 @@ slaDeadline.setHours(
     }
 ]
   });
+  const admins = await User.find({ role: "admin" });
+
+for (const admin of admins) {
+    await Notification.create({
+        recipient: admin._id,
+        message: `New ticket created: ${ticket.title}`,
+        ticket: ticket._id
+    });
+}
 
 
   res.status(201).json({
@@ -231,10 +241,10 @@ if (req.user.role === "customer") {
 if (recipient) {
     await Notification.create({
         recipient,
-        message: `New comment on ticket: ${ticket.title}`,
+        message: `${req.user.name || "Agent"} commented on your ticket: "${message}"`,
         ticket: ticket._id
     });
-}
+} 
 
         return res.status(201).json({
             message: "Comment added successfully",
