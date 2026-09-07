@@ -31,7 +31,10 @@ const registerUser=async(req,res)=>{
         {expiresIn:"7d"}
     );
     res.cookie("token",token,{
-        httpOnly:true,
+       httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     res.status(201).json({
@@ -78,7 +81,10 @@ const loginUser=async(req,res)=>{
      {expiresIn:"7d"}
     );
 res.cookie("token", token, {
-    httpOnly: true
+   httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000
 });
     res.status(200).json({
         message:"Login Successful", 
