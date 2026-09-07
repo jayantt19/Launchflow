@@ -5,7 +5,6 @@ import {
     Bot,
     Bell,
     LogOut,
-    ChevronDown,
     Clock,
     CheckCircle,
     AlertCircle,
@@ -286,10 +285,7 @@ const handleNotificationClick = async (notification) => {
                                     </p>
                                 </div>
 
-                                <ChevronDown
-                                    size={16}
-                                    className="text-slate-400"
-                                />
+                        
 
                             </div>
 

@@ -16,13 +16,16 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use("/api/auth", authRoutes);
-app.use("/api/tickets",ticketRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/agent",agentRoutes);
-app.use("/api/knowledge", knowledgeRoutes);
-app.use("/api/notifications",notificationRoutes);
-app.use("/api/ai", aiRoutes);
+app.use("/auth", authRoutes);
+app.use("/tickets",ticketRoutes);
+app.use("/admin", adminRoutes);
+app.use("/agent",agentRoutes);
+app.use("/knowledge", knowledgeRoutes);
+app.use("/notifications",notificationRoutes);
+app.use("/ai", aiRoutes);
+app.get("/", (req, res) => {
+    res.send("LaunchFlow Backend is running!");
+});
 
 
 module.exports=app;
