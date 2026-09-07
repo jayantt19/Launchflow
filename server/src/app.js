@@ -11,8 +11,7 @@ const knowledgeRoutes = require("./routes/knowledgeRoutes");
 const aiRoutes=require("../src/routes/aiRoutes")
 
 app.use(cors({
-    origin: "http://localhost:5173",
-    "https://launchflow-rypn.onrender.com",
+    origin:"https://launchflow-rypn.onrender.com",
     credentials: true
 }));
 app.use(express.json());
