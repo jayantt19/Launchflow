@@ -30,11 +30,6 @@ useEffect(() => {
         try {
             const response = await api.get("/tickets");
 
-          
-         console.log(
-    "STATUSES:",
-    response.data.tickets.map(ticket => ticket.status)
-);
             setTickets(response.data.tickets || []);
         } catch (error) {
             console.log("Failed to fetch tickets:", error);

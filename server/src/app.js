@@ -10,8 +10,13 @@ const notificationRoutes=require('../src/routes/notificationRoutes')
 const knowledgeRoutes = require("./routes/knowledgeRoutes");
 const aiRoutes=require("../src/routes/aiRoutes")
 
+const allowedOrigins = [
+       "http://localhost:5173",
+    "http://localhost:3000"
+];
+
 app.use(cors({
-    origin:"https://launchflow-rypn.onrender.com",
+    origin: allowedOrigins,
     credentials: true
 }));
 app.use(express.json());
