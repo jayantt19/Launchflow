@@ -76,10 +76,10 @@ function Register() {
 
                         <input
                             type="text"
-                            name="username"
-                            value={formData.username}
+                            name="name"
+                            value={formData.name}
                             onChange={handleChange}
-                            placeholder="Enter username"
+                            placeholder="Enter name"
                             className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                             required
                         />
