@@ -55,51 +55,74 @@ const registerUser=async(req,res)=>{
     }
 };
 
-const loginUser=async(req,res)=>{
-    try{
-     const {email,password}=req.body;
-     const user=await User.findOne({email});
-     if(!user){
-        return res.status(400).json({
-            message:"Invalid Email or Password"
-        });
-     }
+const loginUser = async (req, res) => {
+    try {
+        console.log("LOGIN REQUEST:", req.body);
 
-     const isPasswordCorrect=await bcrypt.compare(
-        password, 
-        user.password);
-     if(!isPasswordCorrect){
-        return res.status(400).json({
-            message:"Invalid Email or Password"
-        });
-     }
+        const { email, password } = req.body;
 
-     const token=jwt.sign({
-        id:user._id,
-        role:user.role
-     },process.env.JWT_SECRET,
-     {expiresIn:"7d"}
-    );
-res.cookie("token", token, {
-   httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    maxAge: 7 * 24 * 60 * 60 * 1000
-});
-    res.status(200).json({
-        message:"Login Successful", 
-        user:{
-            id: user._id,
+        console.log("Searching user...");
+        const user = await User.findOne({ email });
+
+        console.log("User:", user);
+
+        if (!user) {
+            return res.status(400).json({
+                message: "Invalid Email or Password"
+            });
+        }
+
+        console.log("Comparing password...");
+
+        const isPasswordCorrect = await bcrypt.compare(
+            password,
+            user.password
+        );
+
+        console.log("Password correct:", isPasswordCorrect);
+
+        if (!isPasswordCorrect) {
+            return res.status(400).json({
+                message: "Invalid Email or Password"
+            });
+        }
+
+        console.log("JWT SECRET exists:", !!process.env.JWT_SECRET);
+
+        const token = jwt.sign(
+            {
+                id: user._id,
+                role: user.role
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        console.log("Token generated");
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        res.status(200).json({
+            message: "Login Successful",
+            user: {
+                id: user._id,
                 name: user.name,
                 email: user.email,
-                 role: user.role
-        },
-    });
-    }
-    catch(err){
+                role: user.role
+            }
+        });
+
+    } catch (err) {
+        console.error("LOGIN ERROR:", err);
+
         res.status(500).json({
-            message:"Server error",
-            err:err.message
+            message: "Server error",
+            err: err.message
         });
     }
 };
